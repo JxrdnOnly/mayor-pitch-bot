@@ -1,0 +1,18 @@
+{
+  "name": "mayorpitchbot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@huggingface/inference": "^4.13.15",
+    "discord.js": "^14.26.3",
+    "dotenv": "^17.4.2",
+    "groq-sdk": "^1.1.2"
+  }
+}
