@@ -2,6 +2,9 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');
 const Groq = require("groq-sdk");
 
+// 1. IMPORT LORE FROM EXTERNAL FILE
+const { MAYOR_LORE } = require('./lore.js'); 
+
 const client = new Client({ 
     intents: [
         GatewayIntentBits.Guilds, 
@@ -12,21 +15,7 @@ const client = new Client({
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// ==========================================
-// 🏛️ THE MAYOR'S LORE HUB
-// ==========================================
-const MAYOR_LORE = `
-You are Mayor Blake Pitch, the arrogant, sophisticated leader of the North Side in the Marshwood Franchise.
-PERSONALITY:
-- Witty, slightly condescending, and protective of your city.
-- You value "Dino-Dignity" above all else.
-- You are a virtuoso of villainy and a master of sophistication.
-- You consider JxrdnOnly's music the soul of Marshwood.
-RULES:
-- Keep replies short and sharp.
-- Refer to residents as "Resident" or "Interruption."
-`;
-
+// Secrets from .env
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
@@ -38,25 +27,19 @@ const commands = [
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 
-// --- STARTUP & COMMAND SYNC ---
+// --- STARTUP ---
 client.once('clientReady', async () => {
     console.log(`✅ ${client.user.tag} is officially in office.`);
-    
     try {
-        console.log('🏛️ Syncing North Side ordinances...');
-        await rest.put(
-            Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), 
-            { body: commands }
-        );
-        console.log('✅ Commands synced successfully.');
+        await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: commands });
+        console.log('✅ Slash commands live.');
     } catch (error) {
-        console.error('Command registration error:', error);
+        console.error('Registration error:', error);
     }
 });
 
 // --- SLASH COMMANDS ---
 client.on('interactionCreate', async (interaction) => {
-    // FIXED: Using isCommand() for better compatibility
     if (!interaction.isCommand()) return;
 
     if (interaction.commandName === 'soul') {
@@ -79,18 +62,13 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     if (interaction.commandName === 'ordinance') {
-        const ordinances = [
-            "No running in the North Side corridors.",
-            "All residents must appreciate Marshwood Soul at least once daily.",
-            "Dino-Dignity is not a suggestion; it is the law.",
-            "Sophistication is mandatory. Amateurism is forbidden."
-        ];
+        const ordinances = ["No running.", "Listen to Marshwood Soul.", "Maintain Dino-Dignity."];
         const random = ordinances[Math.floor(Math.random() * ordinances.length)];
         await interaction.reply({ content: `📜 **City Ordinance:** ${random}` });
     }
 });
 
-// --- MESSAGE COMMANDS & AI CHAT ---
+// --- AI CHAT ---
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
     const content = message.content.toLowerCase();
@@ -105,20 +83,20 @@ client.on('messageCreate', async (message) => {
 
             const chatCompletion = await groq.chat.completions.create({
                 messages: [
-                    { role: "system", content: MAYOR_LORE },
+                    { role: "system", content: MAYOR_LORE }, // This now correctly pulls from lore.js
                     { role: "user", content: message.content }
                 ],
                 model: "llama-3.3-70b-versatile", 
-                max_tokens: 150,
-                temperature: 0.7
+                max_tokens: 300,
+                temperature: 0.85
             });
 
             const reply = chatCompletion.choices[0]?.message?.content;
-            message.reply(reply || "I'm busy. Go bother a councilman.");
+            message.reply(reply || "I don't have time for this.");
 
         } catch (err) {
-            console.error("The Mayor is unavailable:", err);
-            message.reply("My office is currently flooded with paperwork. Speak to my assistant.");
+            console.error("Groq Error:", err);
+            message.reply("My office is currently flooded with paperwork.");
         }
     }
 });
